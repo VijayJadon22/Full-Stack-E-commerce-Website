@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 import { generateTokensAndSetCookie } from "../lib/authenticationToken.js";
-import jwt from "jsonwebtoken";
+import jwt, { decode } from "jsonwebtoken";
 import { redis } from "../lib/redis.js";
 
 export const signup = async (req, res) => {
@@ -112,3 +112,48 @@ export const logout = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+
+// Define a refreshToken controller function as an asynchronous operation to handle refreshing access tokens
+export const refreshToken = async (req, res) => {
+    try {
+        // Extract the refresh token from the cookies sent with the HTTP request
+        const refreshToken = req.cookies.refreshToken;
+
+        // Check if a refresh token is present; if not, respond with a 401 Unauthorized status
+        if (!refreshToken) return res.status(401).json({ message: "No refresh token found" });
+
+        // Verify the validity of the refresh token using the secret key stored in environment variables
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        // Fetch the stored refresh token for the specific user ID from Redis (a key-value store)
+        const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
+
+        // Check if the stored token matches the provided refresh token; if not, respond with a 401 Unauthorized status
+        if (storedToken !== refreshToken) return res.status(401).json({ message: "Invalid refresh token" });
+
+        // Generate a new access token using the user's ID and the access token secret key
+        const accessToken = jwt.sign(
+            { userId: decoded.userId },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: "15m" } // The access token will expire after 15 minutes
+        );
+
+        // Set the new access token in an HTTP-only cookie to enhance security and prevent client-side access
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true, // Protects the cookie from being accessed via JavaScript in the client
+            secure: process.env.NODE_ENV === "production", // Ensures the cookie is sent over HTTPS in production
+            sameSite: "strict", // Prevents the cookie from being sent with cross-site requests
+            maxAge: 15 * 60 * 1000, // Specifies the cookie expiration time in milliseconds (15 minutes)
+        });
+
+        // Respond with a 201 Created status to indicate that the access token has been successfully refreshed
+        return res.status(201).json({ message: "Access token refreshed successfully" });
+    } catch (error) {
+        // Log any unexpected errors to the console for debugging purposes
+        console.log("Error in refreshToken controller: ", error);
+
+        // Respond with a 500 Internal Server Error status and the error message
+        res.status(500).json({ message: error.message });
+    }
+};
