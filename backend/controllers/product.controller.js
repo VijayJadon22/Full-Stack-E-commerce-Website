@@ -174,5 +174,50 @@ export const getProductsByCategory = async (req, res) => {
     }
 };
 
+// Define a controller function to toggle the 'isFeatured' status of a product
+export const toggleFeaturedProduct = async (req, res) => {
+    // Extract the product ID from the request's route parameters
+    const { id } = req.params;
+
+    try {
+        // Find the product by its ID in the database
+        const product = await Product.findById(id);
+        if (!product) return res.status(404).json({ message: "Product not found" });
+
+        // Toggle the 'isFeatured' field by setting it to the opposite of its current value
+        product.isFeatured = !product.isFeatured;
+        // Save the updated product back to the database
+        const updatedProduct = await product.save();
+
+        // Update the featured products cache in Redis
+        // This ensures that cached data reflects the most up-to-date information
+        await updateFeaturedProductsCache();
+
+        return res.status(200).json(updatedProduct);
+    } catch (error) {
+        console.log("Error in toggleFeaturedProduct controller: ", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+};
+
+
+async function updateFeaturedProductsCache() {
+    try {
+        // Query MongoDB to find all products marked as featured
+        // The `.lean()` method is used to optimize performance by returning plain JavaScript objects
+        // instead of Mongoose documents. Mongoose documents come with additional methods and properties
+        // which add overhead, but in this case, those are unnecessary since we are only reading data.
+        const featuredProducts = await Product.find({ isFeatured: true }).lean();
+
+        // Store the featured products in Redis for future faster access
+        // JSON.stringify() is used to convert the JavaScript object into a JSON string for storage
+        await redis.set("featured_products", JSON.stringify(featuredProducts));
+    } catch (error) {
+        // Log any errors that occur during the cache update for debugging purposes
+        console.log("Error updating featured products cache: ", error);
+    }
+}
+
+
 
 
