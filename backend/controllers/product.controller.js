@@ -123,3 +123,35 @@ export const deleteProduct = async (req, res) => {
     }
 };
 
+// Define a controller function to retrieve recommended products
+export const getRecommendedProducts = async (req, res) => {
+    try {
+        // Use MongoDB's aggregation framework to fetch products
+        const products = await Product.aggregate([
+            {
+                // Select a random sample of 3 products from the collection
+                $sample: { size: 3 }
+            },
+            {
+                // Project (select) only specific fields to include in the results
+                $project: {
+                    _id: 1,           // Include the product's ID
+                    name: 1,         // Include the product's name
+                    description: 1,  // Include the product's description
+                    image: 1,        // Include the product's image URL
+                    price: 1         // Include the product's price
+                }
+            }
+        ]);
+        // Return the recommended products as a JSON response with a 200 OK status
+        return res.status(200).json(products);
+    } catch (error) {
+        // Log any unexpected errors to the console for debugging purposes
+        console.log("Error in getRecommendedProducts controller: ", error);
+
+        // Respond with a 500 Internal Server Error status and the error message
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+};
+
+
