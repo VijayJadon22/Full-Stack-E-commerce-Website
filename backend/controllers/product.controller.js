@@ -154,4 +154,25 @@ export const getRecommendedProducts = async (req, res) => {
     }
 };
 
+// Define a controller function to retrieve products by category
+export const getProductsByCategory = async (req, res) => {
+    // Extract the category parameter from the request's route parameters
+    const { category } = req.params;
+
+    try {
+        // Query the database for products that match the specified category
+        const products = await Product.find({ category });
+
+        // Return the matching products as a JSON response with a 200 OK status
+        return res.status(200).json(products);
+    } catch (error) {
+        // Log any unexpected errors to the console for debugging purposes
+        console.log("Error in getProductsByCategory controller: ", error);
+
+        // Respond with a 500 Internal Server Error status and an error message
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+
 
