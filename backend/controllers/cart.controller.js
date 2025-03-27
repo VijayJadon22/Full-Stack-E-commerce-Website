@@ -73,3 +73,49 @@ export const removeAllFromCart = async (req, res) => {
     }
 };
 
+export const updateQuantity = async (req, res) => {
+    try {
+        // Extract the product ID from the route parameters and the new quantity from the request body
+        const { id: productId } = req.params; // 'id' is passed as a URL parameter and renamed to 'productId'
+        const { quantity } = req.body; // 'quantity' represents the new quantity for the product in the cart
+
+        const user = req.user;
+
+        // Find the existing item in the user's cart that matches the given product ID
+        const existingItem = user.cartItems.find((item) => item.product === productId);
+
+        // If the product exists in the cart, proceed to update its quantity
+        if (existingItem) {
+            // If the quantity is set to zero, remove the product from the cart completely
+            if (quantity === 0) {
+                user.cartItems = user.cartItems.filter((item) => item.product !== productId);
+                // Save the updated user object to the database after removing the product
+                await user.save();
+
+                // Respond to the client with a success message and the updated cart items
+                return res.status(200).json({
+                    message: "Product removed from cart successfully",
+                    cartItems: user.cartItems
+                });
+            }
+
+            // If the quantity is greater than zero, update the quantity for the existing product
+            existingItem.quantity = quantity;
+
+            // Save the updated user object to the database after modifying the quantity
+            await user.save();
+
+            // Respond to the client with the updated cart items (without a success message for this case)
+            return res.status(200).json(user.cartItems);
+        } else {
+            // If the product does not exist in the cart, respond with a 404 Not Found error
+            return res.status(404).json({ message: "Product not found in cart" });
+        }
+    } catch (error) {
+        // Log any unexpected errors to the console for debugging purposes
+        console.log("Error in updateQuantity controller: ", error);
+
+        // Respond to the client with a 500 Internal Server Error and the error message
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+};
