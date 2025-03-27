@@ -1,6 +1,23 @@
 import Product from "../models/product.model.js";
 
 
+export const getCartProducts = async (req, res) => {
+    try {
+        const user = req.user;
+        const products = await Product.find({ _id: { $in: user.cartItems } });
+
+        const cartItems = products.map((product) => {
+            const item = user.cartItems.find((cartItem) => cartItem.product === product._id);
+            return { ...product.toJSON(), quantity: item.quantity };
+        });
+
+        return res.status(200).json(cartItems);
+    } catch (error) {
+        console.log("Error in getCartProducts controller: ", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+}
+
 // Define a controller function to handle adding a product to the user's cart
 export const addToCart = async (req, res) => {
     try {
