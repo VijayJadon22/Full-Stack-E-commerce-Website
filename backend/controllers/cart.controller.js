@@ -1,3 +1,4 @@
+import Product from "../models/product.model.js";
 
 
 // Define a controller function to handle adding a product to the user's cart
@@ -21,12 +22,12 @@ export const addToCart = async (req, res) => {
         }
 
         // Save the updated user object to the database
-        const newList = await user.save();
+        await user.save();
 
         // Respond with a success message and the updated list of cart items
         return res.status(200).json({
             message: "Product added to cart successfully",
-            items: newList.cartItems
+            cartItems: user.cartItems
         });
     } catch (error) {
         // Log any unexpected errors to the console for debugging purposes
@@ -39,3 +40,36 @@ export const addToCart = async (req, res) => {
         });
     }
 };
+
+// Define a controller function to handle removing a product from the user's cart
+export const removeAllFromCart = async (req, res) => {
+    try {
+        // Extract the 'productId' from the request body
+        const { productId } = req.body;
+        // Retrieve the currently authenticated user from the request object
+        const user = req.user;
+
+        // Check if the product exists in the database by its ID
+        const product = await Product.findById(productId);
+        if (!product) return res.status(404).json({ message: "Product not found" });
+
+        // Remove the product from the user's cartItems array
+        user.cartItems = user.cartItems.filter((item) => item.product !== productId);
+
+        // Save the updated user object to the database
+        await user.save();
+
+        return res.status(200).json({
+            message: "Product removed from cart successfully",
+            cartItems: user.cartItems
+        });
+
+    } catch (error) {
+        // Log any unexpected errors to the console for debugging purposes
+        console.log("Error in removeFromCart controller: ", error);
+
+        // Respond with a 500 Internal Server Error status and an error message
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+};
+
