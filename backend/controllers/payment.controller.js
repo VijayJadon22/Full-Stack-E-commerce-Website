@@ -149,4 +149,14 @@ export const verifyRazorpayPayment = async (req, res) => {
 };
 
 // Function to create a new coupon for a specific user
-
+const createNewCoupon = async (userId) => {
+    const newCoupon = new Coupon({
+        // Generate a unique coupon code by appending "GIFT" to a random string
+        code: "GIFT" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+        discountPercentage: 10, // Set a fixed discount percentage for the coupon (e.g., 10%)
+        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Adds 30 days in milliseconds
+        userId: userId,
+    });
+    await newCoupon.save();
+    console.log("New coupon created:", newCoupon);
+};
