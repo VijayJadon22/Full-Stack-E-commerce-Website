@@ -81,4 +81,72 @@ export const createRazorpayOrder = async (req, res) => {
 };
 
 
+// Function to verify Razorpay payment and create a new order
+export const verifyRazorpayPayment = async (req, res) => {
+    try {
+        // Extract Razorpay payment details from the request body
+        const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+        // Generate server-side signature for verification using the secret key
+        const generatedSignature = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET) // Use SHA-256 hashing algorithm
+            .update(razorpayOrderId + "|" + razorpayPaymentId) // Concatenate order ID and payment ID
+            .digest("hex"); // Generate the hash as a hexadecimal string
+
+        // Compare the generated signature with the one sent by Razorpay
+        if (generatedSignature !== razorpaySignature) {
+            return res.status(400).json({ error: "Payment verification failed" }); // Return error if signatures don't match
+        }
+
+        // Fetch Razorpay order details to retrieve metadata (notes)
+        const orderDetails = await razorpay.orders.fetch(razorpayOrderId);
+        const notes = orderDetails.notes; // Extract notes field for additional metadata
+
+        // Deactivate the used coupon if applicable
+        if (notes.couponCode) {
+            await Coupon.findOneAndUpdate(
+                { code: notes.couponCode, userId: notes.userId }, // Match coupon by code and user ID
+                { isActive: false } // Mark the coupon as inactive
+            );
+        }
+
+        // Parse product details stored in Razorpay notes
+        const products = JSON.parse(notes.products);
+
+        // Create a new order in the database after successful payment verification
+        const newOrder = new Order({
+            user: notes.userId, // Reference the user ID from notes
+            products: products.map((product) => ({
+                product: product.productId, // Product ID reference
+                quantity: product.quantity, // Quantity purchased
+                price: product.price / 100, // Convert price back to INR for storage
+            })),
+            totalAmount: orderDetails.amount / 100, // Convert total amount back to INR
+            razorpayOrderId: razorpayOrderId, // Save Razorpay Order ID for reference
+            razorpayPaymentId: razorpayPaymentId, // Save Razorpay Payment ID for reference
+            razorpaySignature: razorpaySignature, // Store verified signature
+            receiptId: orderDetails.receipt, // Save the unique receipt ID
+            coupon: notes.couponCode || null, // Store coupon code if applied
+        });
+
+        // Save the new order in the database
+        await newOrder.save();
+
+        // Return success response with order details
+        res.status(200).json({
+            success: true,
+            message: "Payment verified successfully and order created.",
+            orderId: newOrder._id, // Return the order ID for frontend reference
+            paymentId: razorpayPaymentId, // Include the payment ID for clarity
+            totalAmount: orderDetails.amount / 100, // Convert total amount back to INR
+        });
+
+    } catch (error) {
+        // Log and handle errors
+        console.error("Error verifying Razorpay payment:", error);
+        res.status(500).json({ error: "Error verifying Razorpay payment", details: error.message });
+    }
+};
+
+// Function to create a new coupon for a specific user
 
