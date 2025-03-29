@@ -1,22 +1,47 @@
 import Product from "../models/product.model.js";
 
 
+// export const getCartProducts = async (req, res) => {
+//     try {
+//         const user = req.user;
+//         const products = await Product.find({ _id: { $in: user.cartItems } });
+
+//         const cartItems = products.map((product) => {
+//             const item = user.cartItems.find((cartItem) => cartItem.product === product._id);
+//             return { ...product.toJSON(), quantity: item.quantity };
+//         });
+
+//         return res.status(200).json(cartItems);
+//     } catch (error) {
+//         console.log("Error in getCartProducts controller: ", error);
+//         res.status(500).json({ message: "Server Error", error: error.message });
+//     }
+// }
+
 export const getCartProducts = async (req, res) => {
     try {
         const user = req.user;
-        const products = await Product.find({ _id: { $in: user.cartItems } });
+        // Extract product IDs from the cartItems array
+        const productIds = user.cartItems.map((item) => item.product);
 
+        // Fetch all products in the user's cart using the extracted product IDs
+        const products = await Product.find({ _id: { $in: productIds } });
+
+        // Map over the fetched products and merge their details with the corresponding quantities from cartItems
         const cartItems = products.map((product) => {
-            const item = user.cartItems.find((cartItem) => cartItem.product === product._id);
-            return { ...product.toJSON(), quantity: item.quantity };
+            const item = user.cartItems.find((cartItem) => cartItem.product.toString() === product._id.toString());
+            return { ...product.toJSON(), quantity: item.quantity }; // Add the quantity field from the cartItems
         });
-
+        // Respond with the detailed cart items
         return res.status(200).json(cartItems);
     } catch (error) {
+        // Log any unexpected errors for debugging purposes
         console.log("Error in getCartProducts controller: ", error);
+        // Respond with a 500 Internal Server Error and the error message
         res.status(500).json({ message: "Server Error", error: error.message });
     }
-}
+};
+
 
 // Define a controller function to handle adding a product to the user's cart
 export const addToCart = async (req, res) => {
