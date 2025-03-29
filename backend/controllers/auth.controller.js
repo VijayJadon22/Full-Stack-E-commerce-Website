@@ -159,14 +159,18 @@ export const refreshToken = async (req, res) => {
 };
 
 
+// Controller function to fetch the profile details of the authenticated user
 export const getProfile = async (req, res) => {
     try {
+        // Respond with the user information attached to the request object
+        // The "req.user" is typically populated by authentication middleware (e.g., protectRoute Middleware)
         res.json(req.user);
     } catch (error) {
-        // Log any unexpected error to the console for debugging purposes
+        // Catch any unexpected error and log it to the console for debugging purposes
         console.log("Error in getProfile controller: ", error);
 
-        // Respond with a 500 status and the error message to indicate server failure
+        // Respond with a 500 Internal Server Error status and include the error message
         res.status(500).json({ message: error.message });
     }
-}
+};
+
