@@ -157,3 +157,16 @@ export const refreshToken = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+export const getProfile = async (req, res) => {
+    try {
+        res.json(req.user);
+    } catch (error) {
+        // Log any unexpected error to the console for debugging purposes
+        console.log("Error in getProfile controller: ", error);
+
+        // Respond with a 500 status and the error message to indicate server failure
+        res.status(500).json({ message: error.message });
+    }
+}
