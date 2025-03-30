@@ -1,0 +1,33 @@
+import { create } from "zustand";
+import axios from "../lib/axios.js";
+import { toast } from "react-hot-toast";
+
+export const useUserStore = create((set, get) => ({
+    user: null,
+    error: null,
+    loading: false,
+    checkingAuth: true,
+
+    signup: async ({ name, email, password }) => {
+        set({ laoding: true });
+        try {
+            const res = await axios.post("/auth/signup", { name, email, password });
+            set({ user: res.data.user, loading: false });
+        } catch (error) {
+            set({ loading: false });
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+    login: async ({ email, password }) => {
+        set({ loading: true });
+        try {
+            const res = await axios.post("/auth/login", { email, password });
+            set({ user: res.data.user, loading: false });
+        } catch (error) {
+            set({ loading: false });
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+    // signup:async()=>{},
+    // signup:async()=>{},
+}))
