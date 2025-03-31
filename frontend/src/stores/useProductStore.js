@@ -35,5 +35,22 @@ export const useProductStore = create((set, get) => ({
         }
     },
 
-    
+    deleteProduct: async (id) => {
+
+    },
+    toggleFeaturedProduct: async (id) => {
+        set({ loading: true });
+        try {
+            const res = await axios.patch(`/products/${id}`);
+            set((prevState) => ({
+                products: prevState.products.map((product) =>
+                    product._id === id ? { ...product, isFeatured: res.data.isFeatured } : product
+                ),
+                loading: false
+            }))
+        } catch (error) {
+            set({ loading: false });
+            toast.error(error.res.data.error || "Failed to update product");
+        }
+    }
 }))
