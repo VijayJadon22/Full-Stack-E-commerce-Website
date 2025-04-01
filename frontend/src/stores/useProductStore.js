@@ -35,8 +35,30 @@ export const useProductStore = create((set, get) => ({
         }
     },
 
-    deleteProduct: async (id) => {
+    fetchProductsByCategory: async (category) => {
+        set({ loading: true });
+        try {
+            const response = await axios.get(`/category/${category}`);
+            set({ products: response.data.products, loading: false });
+        } catch (error) {
+            set({ error: "Failed to fetch products", loading: false });
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
 
+    deleteProduct: async (id) => {
+        set({ loading: true });
+        try {
+            const res = await axios.delete(`/products/${id}`);
+            set((prevState) => ({
+                products: prevState.products.filter((product) => product._id !== id),
+                loading: false,
+            }));
+            toast.success("Product deleted successfully");
+        } catch (error) {
+            set({ loading: false });
+            toast.error(error.res.data.error || "Failed to delete product");
+        }
     },
     toggleFeaturedProduct: async (id) => {
         set({ loading: true });
@@ -52,5 +74,8 @@ export const useProductStore = create((set, get) => ({
             set({ loading: false });
             toast.error(error.res.data.error || "Failed to update product");
         }
-    }
+    },
+
+
+
 }))
