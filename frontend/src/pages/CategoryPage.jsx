@@ -3,6 +3,7 @@ import { useProductStore } from "../stores/useProductStore"; // Zustand store fo
 import { useParams } from "react-router-dom"; // React Router hook to retrieve route parameters
 import { motion } from "framer-motion"; // Framer Motion for adding animations
 import ProductCard from "../components/ProductCard.jsx"; // Component to display individual products
+import LoadingSpinner from "../components/LaodingSpinner.jsx";
 
 // CategoryPage Component: Displays products belonging to a specific category
 const CategoryPage = () => {
@@ -10,12 +11,18 @@ const CategoryPage = () => {
   const { category } = useParams();
 
   // Zustand store hooks for product management
-  const { products, fetchProductsByCategory } = useProductStore();
+  const { products, fetchProductsByCategory,loading } = useProductStore();
 
   // Fetch products of the specified category when the component mounts or when the category changes
   useEffect(() => {
     fetchProductsByCategory(category); // Call the action to fetch products for the given category
   }, [fetchProductsByCategory, category]); // Dependency array ensures the effect runs whenever `fetchProductsByCategory` or `category` changes
+
+  if (loading) {
+    return (
+      <LoadingSpinner/>
+    )
+  }
 
   // Render the category page UI
   return (
