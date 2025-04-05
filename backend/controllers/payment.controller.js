@@ -44,7 +44,7 @@ export const createRazorpayOrder = async (req, res) => {
         }
 
         // Generate a unique receipt ID using UUID
-        const receiptId = `receipt_${uuidv4()}`;
+        const receiptId = `rcpt_${Math.random().toString(36).substring(2, 10)}`;
 
         // Define Razorpay order options, including metadata in the notes field
         const options = {
@@ -61,10 +61,6 @@ export const createRazorpayOrder = async (req, res) => {
         // Create a Razorpay order using the API
         const order = await razorpay.orders.create(options);
 
-        // Check if a new coupon should be created (order total >= ₹10,000)
-        if (totalAmount >= 1000000) { // 10,000 INR in paisa
-            await createNewCoupon(req.user._id); // Generate a new coupon for the user for the next order
-        }
 
         // Return the Razorpay Order ID, total amount, and receipt ID to the frontend
         return res.status(200).json({
@@ -110,6 +106,11 @@ export const verifyRazorpayPayment = async (req, res) => {
             );
         }
 
+        // Check if a new coupon should be created (order total >= ₹10,000)
+        if (orderDetails.amount >= 1000000) { // 10,000 INR in paisa
+            await createNewCoupon(req.user._id); // Generate a new coupon for the user for the next order
+        }
+
         // Parse product details stored in Razorpay notes
         const products = JSON.parse(notes.products);
 
@@ -150,6 +151,7 @@ export const verifyRazorpayPayment = async (req, res) => {
 
 // Function to create a new coupon for a specific user
 const createNewCoupon = async (userId) => {
+    await Coupon.findOneAndDelete({ userId: userId });
     const newCoupon = new Coupon({
         // Generate a unique coupon code by appending "GIFT" to a random string
         code: "GIFT" + Math.random().toString(36).substring(2, 8).toUpperCase(),

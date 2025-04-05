@@ -164,7 +164,7 @@ export const getProductsByCategory = async (req, res) => {
         const products = await Product.find({ category });
 
         // Return the matching products as a JSON response with a 200 OK status
-        return res.status(200).json(products);
+        return res.status(200).json({ products });
     } catch (error) {
         // Log any unexpected errors to the console for debugging purposes
         console.log("Error in getProductsByCategory controller: ", error);

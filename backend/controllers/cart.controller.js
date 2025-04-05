@@ -1,22 +1,5 @@
 import Product from "../models/product.model.js";
-
-
-// export const getCartProducts = async (req, res) => {
-//     try {
-//         const user = req.user;
-//         const products = await Product.find({ _id: { $in: user.cartItems } });
-
-//         const cartItems = products.map((product) => {
-//             const item = user.cartItems.find((cartItem) => cartItem.product === product._id);
-//             return { ...product.toJSON(), quantity: item.quantity };
-//         });
-
-//         return res.status(200).json(cartItems);
-//     } catch (error) {
-//         console.log("Error in getCartProducts controller: ", error);
-//         res.status(500).json({ message: "Server Error", error: error.message });
-//     }
-// }
+import User from "../models/user.model.js";
 
 export const getCartProducts = async (req, res) => {
     try {
@@ -53,14 +36,14 @@ export const addToCart = async (req, res) => {
         const user = req.user;
 
         // Check if the product is already in the user's cart
-        const existingItem = user.cartItems.find(item => item.product === productId);
+        const existingItem = user.cartItems.find(item => item.product.toString() === productId);
 
         // If the product exists in the cart, increase its quantity by 1
         if (existingItem) {
             existingItem.quantity += 1;
         } else {
             // If the product doesn't exist in the cart, add it with a default quantity of 1
-            user.cartItems.push({ product: productId });
+            user.cartItems.push({ product: productId, quantity: 1 });
         }
 
         // Save the updated user object to the database
@@ -96,7 +79,7 @@ export const removeAllFromCart = async (req, res) => {
         if (!product) return res.status(404).json({ message: "Product not found" });
 
         // Remove the product from the user's cartItems array
-        user.cartItems = user.cartItems.filter((item) => item.product !== productId);
+        user.cartItems = user.cartItems.filter((item) => item.product.toString() !== productId);
 
         // Save the updated user object to the database
         await user.save();
@@ -115,6 +98,22 @@ export const removeAllFromCart = async (req, res) => {
     }
 };
 
+export const clearCart = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+        
+        user.cartItems = [];
+        await user.save();
+
+        return res.status(200).json({ message: "Cart cleared successfully" });
+    } catch (error) {
+        console.log("Error in clearCart controller: ", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+}
+
 export const updateQuantity = async (req, res) => {
     try {
         // Extract the product ID from the route parameters and the new quantity from the request body
@@ -124,13 +123,13 @@ export const updateQuantity = async (req, res) => {
         const user = req.user;
 
         // Find the existing item in the user's cart that matches the given product ID
-        const existingItem = user.cartItems.find((item) => item.product === productId);
+        const existingItem = user.cartItems.find((item) => item.product.toString() === productId);
 
         // If the product exists in the cart, proceed to update its quantity
         if (existingItem) {
             // If the quantity is set to zero, remove the product from the cart completely
             if (quantity === 0) {
-                user.cartItems = user.cartItems.filter((item) => item.product !== productId);
+                user.cartItems = user.cartItems.filter((item) => item.product.toString() !== productId);
                 // Save the updated user object to the database after removing the product
                 await user.save();
 
