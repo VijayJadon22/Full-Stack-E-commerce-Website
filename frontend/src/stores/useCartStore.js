@@ -1,13 +1,15 @@
 import { create } from "zustand";
 import axios from "../lib/axios.js";
 import toast from "react-hot-toast";
-import { updateQuantity } from "../../../backend/controllers/cart.controller.js";
+import { useUserStore } from "./useUserStore.js";
 
 export const useCartStore = create((set, get) => ({
     cart: [],
     coupon: null,
     total: 0,
     subTotal: 0,
+    isCouponApplied: false,
+    
 
     getCartItems: async () => {
         try {
@@ -15,8 +17,8 @@ export const useCartStore = create((set, get) => ({
             set({ cart: res.data });
             get().calculateTotals();
         } catch (error) {
+            console.error("Error fetching cart items:", error.message);
             set({ cart: [] });
-            // toast.error(error.response.data.message || "An error occurred");
         }
     },
 
@@ -48,8 +50,55 @@ export const useCartStore = create((set, get) => ({
 
     },
 
-    updateQuantity: async () => { },
+    clearCart: async () => {
+        try {
+            await axios.delete("/cart/clear");
+            set({ cart: [], coupon: null, total: 0, subTotal: 0, isCouponApplied: false });
+        } catch (error) {
+            console.error("Error clearing cart:", error);
+            toast.error("Failed to clear cart. Please try again.");
+        }
 
+    },
+
+    updateQuantity: async (productId, quantity) => {
+        if (quantity === 0) {
+            get().removeFromCart(productId);
+            return;
+        }
+        await axios.put(`/cart/${productId}`, { quantity });
+        set((prevState) => ({
+            cart: prevState.cart.map((item) => item._id === productId ? { ...item, quantity: quantity } : item)
+        }));
+        get().calculateTotals();
+    },
+
+    getMyCoupon: async () => {
+        try {
+            const response = await axios.get("/coupons");
+            set({ coupon: response.data });
+        } catch (error) {
+            console.error("Error fetching coupon:", error);
+        }
+    },
+
+    applyCoupon: async (code) => {
+        try {
+            const response = await axios.post("/coupons/validate", { code });
+            set({ coupon: response.data, isCouponApplied: true });
+            get().calculateTotals();
+            toast.success("Coupon applied successfully");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to apply coupon. Please try again.");
+        }
+    },
+
+    removeCoupon: () => { 
+        set({ coupon: null, isCouponApplied: false });
+        get().calculateTotals();
+        toast.success("Coupon removed");
+    },
+    
     calculateTotals: () => {
         const { cart, coupon } = get();
         const subTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
