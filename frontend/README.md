@@ -1,12 +1,16 @@
-# E-Commerce Platform
+# Trendify - Modern E-Commerce Platform
 
-A comprehensive full-stack e-commerce application with a robust backend API built with Node.js, Express, and MongoDB, featuring user authentication, product management, shopping cart functionality, order processing, and secure payment processing.
+Trendify is a comprehensive full-stack e-commerce platform specializing in eco-friendly fashion. Built with modern web technologies, it offers a seamless shopping experience with robust backend functionality and an intuitive, responsive frontend interface.
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
 - [System Architecture](#system-architecture)
+- [Frontend](#frontend)
+  - [Pages & Components](#pages--components)
+  - [State Management](#state-management)
+  - [Animation & UI](#animation--ui)
 - [Backend API](#backend-api)
   - [Models](#models)
   - [Authentication & Authorization](#authentication--authorization)
@@ -21,18 +25,18 @@ A comprehensive full-stack e-commerce application with a robust backend API buil
 
 ## Overview
 
-This project is a feature-rich e-commerce platform designed for performance, security, and scalability. It implements modern web development concepts like JWT-based authentication, Redis caching, Cloudinary for image storage, and integrates Razorpay for secure payment processing.
+Trendify is a feature-rich e-commerce platform designed for performance, security, and scalability. The application combines a React-based frontend with a Node.js/Express backend, MongoDB database, and integrates several third-party services to deliver a complete shopping solution.
 
 ## Features
 
 ### User Management
 - Signup, login, profile management with JWT authentication
 - Role-based access control (admin/customer)
+- Secure password handling
 
 ### Product Management
-- CRUD operations for products
-- Product categorization
-- Featured product highlighting
+- Browse products by category (Jeans, T-shirts, Shoes, Glasses, Jackets, Suits, Bags)
+- Featured product showcase
 - Product recommendations
 
 ### Shopping Cart
@@ -51,32 +55,71 @@ This project is a feature-rich e-commerce platform designed for performance, sec
 - Apply discounts
 - Automatic coupon generation for large orders
 
-### Analytics
+### Analytics (Admin Only)
 - Total sales tracking
 - Revenue analysis
 - User statistics
 - Daily sales data
 
-### Cloud Features
-- Cloudinary integration for image storage
-- Redis caching for performance optimization
+### UI/UX Features
+- Responsive design that works on all devices
+- Smooth animations using Framer Motion
+- Modern, eco-friendly branding
+- Loading states with custom spinners
 
 ## System Architecture
 
-The system is built using a Model-View-Controller (MVC) architecture:
+### Frontend
+- **React**: UI library
+- **React Router**: Navigation and routing
+- **Framer Motion**: Animation library
+- **Lucide React**: Icon components
+- **React Hot Toast**: Notifications
+- **Custom Store**: State management using custom hooks
 
-- **Models**: MongoDB schemas using Mongoose
-- **Controllers**: Business logic for handling requests and responses
-- **Routes**: API endpoint definitions
-- **Middleware**: Authentication, authorization, and request validation
-- **Libraries**: Custom modules for payment processing, caching, cloud storage
+### Backend
+- **Node.js & Express**: Server framework
+- **MongoDB & Mongoose**: Database and ODM
+- **JWT**: Authentication
+- **Redis**: Caching (via Upstash)
+- **Cloudinary**: Image storage
+- **Razorpay**: Payment gateway
 
-### External Services
+## Frontend
 
-- MongoDB (Database)
-- Redis (Caching)
-- Cloudinary (Image storage)
-- Razorpay (Payment gateway)
+### Pages & Components
+
+#### Pages
+- **HomePage**: Features category navigation and featured products
+- **CategoryPage**: Displays products filtered by category
+- **LoginPage**: User login functionality
+- **SignupPage**: New user registration
+
+#### Components
+- **ProductCard**: Displays individual product information
+- **CategoryItem**: Navigate to product categories
+- **FeaturedProducts**: Showcase of highlighted products
+- **LoadingSpinner**: Displays during async operations
+
+### State Management
+
+The frontend uses custom store hooks for state management:
+
+- **useProductStore**: Manages product data and fetching
+  - `fetchProductsByCategory`: Load products from specific category
+  - `fetchFeaturedProducts`: Load featured products
+
+- **useUserStore**: Handles user authentication
+  - `login`: User login functionality
+  - `signup`: New user registration
+  - User state tracking
+
+### Animation & UI
+
+- **Framer Motion**: Implements smooth animations throughout the application
+- **Responsive Design**: Tailwind classes ensure the app works on all device sizes
+- **Modern Icons**: Lucide React icons for enhanced UI elements
+- **Form Validation**: Client-side validation for login and signup forms
 
 ## Backend API
 
@@ -161,28 +204,6 @@ The system implements a secure authentication system:
   - Passwords are hashed using bcrypt before storage
   - Custom method for password comparison
 
-- **Token Generation Method**:
-  ```javascript
-  // User schema method to generate JWT tokens
-  generateTokens: function(userId) {
-      // Generate access token (15 minutes expiry)
-      const accessToken = jwt.sign(
-          { userId },
-          process.env.ACCESS_TOKEN_SECRET,
-          { expiresIn: "15m" }
-      );
-      
-      // Generate refresh token (7 days expiry)
-      const refreshToken = jwt.sign(
-          { userId },
-          process.env.REFRESH_TOKEN_SECRET,
-          { expiresIn: "7d" }
-      );
-      
-      return { accessToken, refreshToken };
-  }
-  ```
-
 - **Token Storage**:
   - Tokens are stored in HTTP-only cookies for client-side security
   - Refresh tokens are also stored in Redis for validation
@@ -190,10 +211,6 @@ The system implements a secure authentication system:
 - **Protection Middleware**:
   - `protectRoute`: Ensures the user is authenticated
   - `adminRoute`: Restricts access to admin-only endpoints
-
-- **Token Refresh Mechanism**:
-  - When access tokens expire, refresh tokens can be used to generate new access tokens
-  - Implemented through the `/api/auth/refresh-token` endpoint
 
 ### Payment Integration
 
@@ -223,10 +240,6 @@ Redis is used for caching to improve performance:
 
 - **Token Storage**:
   - Stores refresh tokens with expiry matching token validity
-
-- **Cache Implementation**:
-  - Uses ioredis client connected to Upstash Redis
-  - Implements cache invalidation strategies
 
 ### Cloud Integration
 
@@ -280,6 +293,7 @@ Cloudinary handles image storage and processing:
 
 The application uses the following environment variables:
 
+### Backend
 ```
 # Database Configuration
 MONGO_URI=mongodb+srv://your_mongodb_connection_string
@@ -305,32 +319,42 @@ NODE_ENV=development
 PORT=5000
 ```
 
+### Frontend
+```
+# API Base URL
+REACT_APP_API_URL=http://localhost:5000/api
+
+# Razorpay Key (Client)
+REACT_APP_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
+
 ## Installation & Setup
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd ecommerce-project
+   cd trendify
    ```
 
-2. **Install backend dependencies**
+2. **Set up the backend**
    ```bash
    cd backend
    npm install
+   # Create .env file with required variables
+   npm run dev
    ```
 
-3. **Set up environment variables**
-   - Create a `.env` file in the backend directory
-   - Add the required environment variables
-
-4. **Start the backend server**
+3. **Set up the frontend**
    ```bash
-   # Development
-   npm run dev
-
-   # Production
+   cd ../frontend
+   npm install
+   # Create .env file with required variables
    npm start
    ```
+
+4. **Access the application**
+   - Backend API: http://localhost:5000
+   - Frontend App: http://localhost:3000
 
 ## Security Features
 
@@ -339,16 +363,6 @@ The application implements several security best practices:
 - **Password Security**:
   - Passwords are hashed using bcrypt before storage
   - Implemented in pre-save middleware on the User model
-  ```javascript
-  // Pre-save middleware to hash passwords
-  userSchema.pre("save", async function(next) {
-      if (this.isModified("password") || this.isNew) {
-          const salt = await bcrypt.genSalt(10);
-          this.password = await bcrypt.hash(this.password, salt);
-      }
-      next();
-  });
-  ```
 
 - **Token Security**:
   - HTTP-only cookies prevent JavaScript access
@@ -391,6 +405,11 @@ Potential improvements for future versions:
   - Implement recurring payment options
   - Create subscription-based products
 
-- **Multiple Payment Gateways**:
-  - Add support for additional payment methods
-  - International payment processing
+- **Additional Frontend Pages**:
+  - Product detail pages
+  - Admin dashboard
+  - Order history page
+
+---
+
+Developed with ❤️ for eco-friendly fashion
